@@ -4,8 +4,6 @@ AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 2: RBloggers - How To Use R In AWS Lambda](https://www.r-bloggers.com/how-to-use-r-in-aws-lambda/)\
 [Reference 3: AWS Tutorial - Publishing a Custom Runtime](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html)
 
-Lambda/R Setup for War Reserve Class of Supply Calculator AWS Linux AMI
-
 (for EC2 memory management - R requires a lot of space for compiling readr and some other packages)\
 (run below when creating EC2 instance on AWS prior to installing R)
 
@@ -15,11 +13,10 @@ Lambda/R Setup for War Reserve Class of Supply Calculator AWS Linux AMI
 `sudo /sbin/swapon /var/swap.1`\
 `sudo sh -c 'echo "/var/swap.1 swap swap defaults 0 0 " >> /etc/fstab`
 
+# Run this script
+[r-build.sh - in terminal with copy and paste]
 
-`sudo chmod -R a+rwx ec2-user`  #this step I lose WinSCP for permissions error but needed to upload bash scripts\
-[build_r.sh - ran this in terminal with copy and paste]
-
-(Copy to S3 Bucket)\
+(Copy zip output files to S3 Bucket)\
 `aws s3 cp R.zip s3://war-reserve-cos/R-3.6.2/`
 
 
@@ -28,7 +25,7 @@ Lambda/R Setup for War Reserve Class of Supply Calculator AWS Linux AMI
 `sudo chmod -R a+rwx /opt/R/new_library/R/library`  #make it writeable
 
  
-[Modifications to build-r.sh: R command line @root]\
+[Modifications to r-build.sh: R command line @root]\
 `install.packages(c("dplyr","tidyr", "fuzzyjoin", "data.table", "magrittr", "stringr", "readr","xgboost"),`\
 `lib = '/opt/R/new_library/R/library', repos="http://cran.r-project.org")`
 
