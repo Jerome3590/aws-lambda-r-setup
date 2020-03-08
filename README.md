@@ -1,5 +1,5 @@
-# wrsa-lambda
-AWS LAMBDA implementation of the War Reserve Suite of Apps\
+
+AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 1: Running R On AWS Lambda](https://medium.com/bakdata/running-r-on-aws-lambda-9d40643551a6)\
 [Reference 2: RBloggers - How To Use R In AWS Lambda](https://www.r-bloggers.com/how-to-use-r-in-aws-lambda/)\
 [Reference 3: AWS Tutorial - Publishing a Custom Runtime](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html)
