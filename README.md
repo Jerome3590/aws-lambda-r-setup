@@ -2,7 +2,8 @@
 AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 1: Running R On AWS Lambda](https://medium.com/bakdata/running-r-on-aws-lambda-9d40643551a6)\
 [Reference 2: RBloggers - How To Use R In AWS Lambda](https://www.r-bloggers.com/how-to-use-r-in-aws-lambda/)\
-[Reference 3: AWS Tutorial - Publishing a Custom Runtime](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html)
+[Reference 3: AWS Tutorial - Publishing a Custom Runtime](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html) \
+[Reference 4: Running R Script on Lambda](https://medium.com/veltra-engineering/running-r-script-on-aws-lambda-custom-runtime-3a87403dcb)
 
 (for EC2 memory management - R requires a lot of space for compiling readr and some other packages)\
 (run below when creating EC2 instance on AWS prior to installing R)
