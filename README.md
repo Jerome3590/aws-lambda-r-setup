@@ -53,9 +53,9 @@ sudo apt install libssl-dev libxml2-dev  \
 libcurl4-openssl-dev
 
 
-install.packages(c("jsonlite", "aws.signature", "httr", "xml2", "logging"), repos="http://cran.r-project.org")'  \
+install.packages(c("jsonlite", "aws.signature", "httr", "xml2", "logging"), repos="http://cran.r-project.org")'  
 
-install.packages("aws.s3", repos = c("cloudyr" = "http://cloudyr.github.io/drat"))' \
+install.packages("aws.s3", repos = c("cloudyr" = "http://cloudyr.github.io/drat"))' 
 
 R_HOME_DIR=$R_HOME
 
