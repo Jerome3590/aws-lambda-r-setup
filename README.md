@@ -78,7 +78,7 @@ zip -r -q runtime.zip runtime.R bootstrap R/   \
 zip runtime.zip bootstrap runtime.R R/   # Bundle Base R Layer with Boostrap/Runtime.R environment
 
 (Copy to S3 Bucket)
-aws s3 cp runtime.zip s3://cana-jerome-test/RBuilds/
+aws s3 cp runtime.zip s3://jerome-test/RBuilds/
 
 (Finally - publish everything to Lambda as seperate layers
 aws lambda publish-layer-version --layer-name baseR-3.6.3 --zip-file fileb://runtime.zip
