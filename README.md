@@ -6,7 +6,7 @@ AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 4: Running R Script on Lambda](https://medium.com/veltra-engineering/running-r-script-on-aws-lambda-custom-runtime-3a87403dcb) \
 [Reference 5: Serverless Container-aware ARchitectures](https://github.com/grycap/scar/tree/master/examples/r)
 
-[Docker]
+[Docker] \
 docker run -ti --name baser-deb-slim debian:stretch-slim bash
 
 apt-get update \
