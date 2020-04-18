@@ -44,7 +44,7 @@ sudo apt install build-essential
 
 cd /opt/R/
 ./configure --prefix=/opt/R/ --exec-prefix=/opt/R/ --with-libpth-prefix=/opt/ --without-recommended-packages  \
-make
+make   \
 cp /usr/lib64/libgfortran.so.3 lib/  \
 cp /usr/lib64/libgomp.so.1 lib/      \
 cp /usr/lib64/libquadmath.so.0 lib/  \
@@ -69,13 +69,13 @@ docker cp CONTAINER:{pwd}/R.zip R.zip
 [Windows Bash Linux]
 set -euo pipefail
 
-rm -rf R/
-unzip -q R.zip -d R/
-rm -r R/doc/manual/
-chmod -R 755 bootstrap runtime.R R/
-rm -f runtime.zip
-zip -r -q runtime.zip runtime.R bootstrap R/
-zip runtime.zip bootstrap runtime.R R/# Bundle Base R Layer with Boostrap/Runtime.R environment
+rm -rf R/    \
+unzip -q R.zip -d R/  \
+rm -r R/doc/manual/   \
+chmod -R 755 bootstrap runtime.R R/     \
+rm -f runtime.zip     \
+zip -r -q runtime.zip runtime.R bootstrap R/   \
+zip runtime.zip bootstrap runtime.R R/   # Bundle Base R Layer with Boostrap/Runtime.R environment
 
 (Copy to S3 Bucket)
 aws s3 cp runtime.zip s3://cana-jerome-test/RBuilds/
