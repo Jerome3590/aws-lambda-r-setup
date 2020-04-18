@@ -17,14 +17,14 @@ set -euo pipefail
 
 VERSION=3.6.3
 
-wget https://cran.uni-muenster.de/src/base/R-3/R-$VERSION.tar.gz
-mkdir /opt/R/
-chown $(whoami) /opt/R/
-tar -xf R-$VERSION.tar.gz
+wget https://cran.uni-muenster.de/src/base/R-3/R-$VERSION.tar.gz  \
+mkdir /opt/R/     \
+chown $(whoami) /opt/R/   \
+tar -xf R-$VERSION.tar.gz  \
 mv R-$VERSION/* /opt/R/
 
 
-sudo apt install dirmngr apt-transport-https ca-certificates software-properties-common gnupg2
+sudo apt install dirmngr apt-transport-https ca-certificates software-properties-common gnupg2  
 
 sudo apt-get install -y readline-devel \
 xorg-x11-server-devel libX11-devel libXt-devel \
@@ -34,7 +34,7 @@ zlib-devel bzip2 bzip2-libs
 
 sudo apt install dirmngr apt-transport-https ca-certificates software-properties-common gnupg2
 
-sudo apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
+sudo apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF' \
 sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/debian stretch-cran35/'
 
 sudo apt update
@@ -43,19 +43,19 @@ sudo apt install r-base
 sudo apt install build-essential
 
 cd /opt/R/
-./configure --prefix=/opt/R/ --exec-prefix=/opt/R/ --with-libpth-prefix=/opt/ --without-recommended-packages
+./configure --prefix=/opt/R/ --exec-prefix=/opt/R/ --with-libpth-prefix=/opt/ --without-recommended-packages  \
 make
-cp /usr/lib64/libgfortran.so.3 lib/
-cp /usr/lib64/libgomp.so.1 lib/
-cp /usr/lib64/libquadmath.so.0 lib/
-cp /usr/lib64/libstdc++.so.6 lib/
-sudo apt install libssl-dev libxml2-dev
+cp /usr/lib64/libgfortran.so.3 lib/  \
+cp /usr/lib64/libgomp.so.1 lib/      \
+cp /usr/lib64/libquadmath.so.0 lib/  \
+cp /usr/lib64/libstdc++.so.6 lib/    \
+sudo apt install libssl-dev libxml2-dev  \
 libcurl4-openssl-dev
 
 
-install.packages(c("jsonlite", "aws.signature", "httr", "xml2", "logging"), repos="http://cran.r-project.org")'
+install.packages(c("jsonlite", "aws.signature", "httr", "xml2", "logging"), repos="http://cran.r-project.org")'  \
 
-install.packages("aws.s3", repos = c("cloudyr" = "http://cloudyr.github.io/drat"))'
+install.packages("aws.s3", repos = c("cloudyr" = "http://cloudyr.github.io/drat"))' \
 
 R_HOME_DIR=$R_HOME
 
