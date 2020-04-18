@@ -85,3 +85,4 @@ aws lambda publish-layer-version --layer-name baseR-3.6.3 --zip-file fileb://run
 	
 	
 # aws-lambda-r-setup
+
