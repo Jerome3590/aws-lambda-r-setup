@@ -9,8 +9,8 @@ AWS LAMBDA R ENVIRONMENT SETUP\
 [Docker]
 docker run -ti --name baser-deb-slim debian:stretch-slim bash
 
-apt-get update
-apt-get install wget
+apt-get update \
+apt-get install wget \
 apt-get install sudo
 
 set -euo pipefail
@@ -37,7 +37,7 @@ sudo apt install dirmngr apt-transport-https ca-certificates software-properties
 sudo apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF' \
 sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/debian stretch-cran35/'
 
-sudo apt update
+sudo apt update \
 sudo apt install r-base
 
 sudo apt install build-essential
@@ -61,12 +61,12 @@ R_HOME_DIR=$R_HOME
 
 zip -r -q R.zip bin/ lib/ lib64/ etc/ library/ doc/ modules/ share/
 
-(Copy from Docker to local file system)
+(Copy from Docker to local file system) \
 (pwd)
 
 docker cp CONTAINER:{pwd}/R.zip R.zip
 
-[Windows Bash Linux]
+[Windows Bash Linux] \
 set -euo pipefail
 
 rm -rf R/    \
@@ -77,10 +77,10 @@ rm -f runtime.zip     \
 zip -r -q runtime.zip runtime.R bootstrap R/   \
 zip runtime.zip bootstrap runtime.R R/   # Bundle Base R Layer with Boostrap/Runtime.R environment
 
-(Copy to S3 Bucket)
+(Copy to S3 Bucket) \
 aws s3 cp runtime.zip s3://jerome-test/RBuilds/
 
-(Finally - publish everything to Lambda as separate layers
+(Finally - publish everything to Lambda as separate layers \
 aws lambda publish-layer-version --layer-name baseR-3.6.3 --zip-file fileb://runtime.zip
 	
 	
