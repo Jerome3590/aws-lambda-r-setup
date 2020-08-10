@@ -1,0 +1,95 @@
+FROM lambci/lambda:build-provided
+ENV AWS_DEFAULT_REGION us-east-1
+ENV AWS_ACCESS_KEY_ID=AWS_ACCESS_KEY_ID
+ENV AWS_SECRET_ACCESS_KEY=AWS_SECRET_ACCESS_KEY
+
+
+RUN yum install -q -y wget \
+    awscli \
+    readline-devel \
+    xorg-x11-server-devel libX11-devel libXt-devel \
+    curl-devel \
+    gcc-c++ gcc-gfortran \
+    zlib-devel bzip2 bzip2-libs \
+    java-1.8.0-openjdk-devel \
+	python38-devel.x86_64  \
+	python38-virtualenv.noarch \
+	openssl-devel libxml2-devel
+
+ARG VERSION=4.0.2
+ARG R_DIR=/opt/R/
+
+RUN yum install -y epel-release
+RUN yum install --enablerepo="epel" -y pcre2-devel
+
+RUN wget -q https://cran.r-project.org/src/base/R-4/R-${VERSION}.tar.gz && \
+    mkdir ${R_DIR} && \
+    tar -xf R-${VERSION}.tar.gz && \
+    mv R-${VERSION}/* ${R_DIR} && \
+    rm R-${VERSION}.tar.gz
+
+WORKDIR ${R_DIR}
+RUN ./configure --prefix=${R_DIR} --exec-prefix=${R_DIR} --with-libpth-prefix=/opt/ --enable-R-shlib && \
+    make
+
+RUN ./bin/Rscript -e 'install.packages(c("httr", "aws.signature", "logging"), repos="http://cran.r-project.org")'  \
+	./bin/Rscript -e 'install.packages(c("xml2"), repos="http://cran.r-project.org")'  \
+    ./bin/Rscript -e 'install.packages(c("jsonlite", "aws.s3","data.table", "httr"), repos="http://cran.r-project.org")'  
+
+
+ENV PATH="/opt/R/bin:${PATH}"
+ENV R_LIBS="/opt/R/libs"
+ENV R_HOME="/opt/R"
+
+
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m venv ~/lambda-rpy2 && \
+    source ~/lambda-rpy2/bin/activate
+
+RUN ~/lambda-rpy2/bin/pip3 install rpy2 -t ~/lambda-rpy2/lib64/python3.6/site-packages
+
+
+ARG PRJ_NAME=lex-lambda
+RUN mkdir ~/${PRJ_NAME}  && \
+    chmod -R a+w ~/${PRJ_NAME} && \
+    cd ~/${PRJ_NAME}  && \
+	
+
+	source ~/lambda-rpy2/bin/activate && \
+    cd ~/${PRJ_NAME}  && \
+    cp -r ~/lambda-rpy2/lib64/python3.6/site-packages/* ~/${PRJ_NAME}  && \
+	cp /usr/lib64/python3.6/lib-dynload/_sqlite3.cpython-36m-x86_64-linux-gnu.so \
+    ~/${PRJ_NAME}
+	
+RUN cp /usr/lib64/python3.6/lib-dynload/_sqlite3.cpython-36m-x86_64-linux-gnu.so \
+    ~/${PRJ_NAME}
+	
+
+RUN ls /opt/R |  \
+    grep -v library |  \
+    xargs -I '{}'      \
+    cp -r /opt/R/'{}' ~/${PRJ_NAME}/  && \
+    cp -r /opt/R/library ~/${PRJ_NAME}/library/  && \
+	ldd /opt/R/bin/exec/R | \
+    grep "=> /" | \
+    awk '{print $3}' | \
+    grep 'libgomp.so.1\|libgfortran.so.3\|libquadmath.so.0\|libtre.so.5' | \
+    xargs -I '{}' cp '{}' ~/${PRJ_NAME}/lib/  && \
+	chmod -R a+w ~/${PRJ_NAME}/library && \
+	cp -r /opt/R/library/* ~/${PRJ_NAME}/library  && \
+    cp ~/${PRJ_NAME}/bin/exec/R ~/${PRJ_NAME}   && \
+    cp /opt/R/lib/libRblas.so ~/${PRJ_NAME}/lib   && \
+    cp /opt/R/lib/libRlapack.so ~/${PRJ_NAME}/lib   && \
+	cp /opt/R/lib/libR.so ~/${PRJ_NAME}/lib   && \
+    
+
+    cp -R ~/lambda-rpy2/lib/python3.6/site-packages/rpy2/rinterface_lib ~/${PRJ_NAME}/rpy2/rinterface_lib
+
+
+ARG LAMBDA_ZIP_NAME="pyr2-runtime.zip"
+RUN zip -qr9 ~/${PRJ_NAME}/${LAMBDA_ZIP_NAME} *
+
+
+RUN aws s3 cp ~/${PRJ_NAME}/${LAMBDA_ZIP_NAME}  s3://{bucket-name}
+
+	
