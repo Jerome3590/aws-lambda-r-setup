@@ -8,6 +8,11 @@ AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 6: Of R and APIs: Running R in Amazon Lambda](https://numeract.github.io/aws-lambda-r/#1) \
 [Reference 7: R Deployment Package](https://github.com/numeract/aws-lambda-r/blob/master/scripts/13_create_deployment_package.sh)
 
+lambda-build_Dockerfile.txt is a compilation of all my research to date.
+
+Using R with a Python handler.
+
+handler.py and example.r are my test files..plan to do some additional testing in AWS, Oracle, and Google cloud environments
 
 	
 # aws-lambda-r-setup
