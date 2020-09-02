@@ -12,7 +12,7 @@ lambda-build_Dockerfile.txt is a compilation of all my research to date.
 
 Using R with a Python handler.
 
-handler.py and example.r are my test files..plan to do some additional testing in AWS, Oracle, and Google cloud environments
+handler.py and example.r are my test files..plan to extend out with AWS Step Functions and R BioConducter packages if doable.
 
 	
 # aws-lambda-r-setup
