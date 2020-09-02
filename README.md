@@ -6,8 +6,9 @@ AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 4: Running R Script on Lambda](https://medium.com/veltra-engineering/running-r-script-on-aws-lambda-custom-runtime-3a87403dcb) \
 [Reference 5: Serverless Container-aware ARchitectures](https://github.com/grycap/scar/tree/master/examples/r) \
 [Reference 6: Of R and APIs: Running R in Amazon Lambda](https://numeract.github.io/aws-lambda-r/#1) \
-[Reference 7: R Deployment Package](https://github.com/numeract/aws-lambda-r/blob/master/scripts/13_create_deployment_package.sh)
-[Reference 8: R lambdaR](https://github.com/VanAndelInstitute/lambdaR)
+[Reference 7: R Deployment Package](https://github.com/numeract/aws-lambda-r/blob/master/scripts/13_create_deployment_package.sh) \
+[Reference 8: Van Andel Research Institute
+:lambdaR](https://github.com/VanAndelInstitute/lambdaR)
 
 
 rpy-lambda-build.sh is the latest compilation of all research to date.
