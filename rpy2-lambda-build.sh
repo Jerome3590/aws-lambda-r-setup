@@ -20,16 +20,27 @@ yum install -q -y wget \
     java-1.8.0-openjdk-devel \
     openssl-devel libxml2-devel
     
-export PATH="$PATH:/opt/bin:/opt/lib:/opt/R/bin"
+export PATH="$PATH:/opt/R/lib64/R:/opt/R/bin/R:/opt/bin:/opt/lib:/opt/R/bin"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
 export LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
 export LD_RUN_PATH="$LD_RUN_PATH:/opt/lib"
-export C_INCLUDE_PATH="$C_INCLUDE_PATH:/opt/include"
-export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/opt/include"
-export CPATH="$CPATH:/opt/include"
+export C_INCLUDE_PATH="$C_INCLUDE_PATH:/usr/include/python2.7:/opt/include"
+export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7:/opt/include"
+export CPATH="$CPATH:/usr/include/python2.7:/opt/include"
 export LDFLAGS="-I/opt/lib"
 
-source ./bashrc
+# Edit .bashrc file to include above environmental variables
+# nano .bashrc
+# export PATH="$PATH:/opt/R/lib64/R:/opt/R/bin/R:/opt/bin:/opt/lib:/opt/R/bin"
+# export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
+# export LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
+# export LD_RUN_PATH="$LD_RUN_PATH:/opt/lib"
+# export C_INCLUDE_PATH="$C_INCLUDE_PATH:/usr/include/python2.7:/opt/include"
+# export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7:/opt/include"
+# export CPATH="$CPATH:/usr/include/python2.7:/opt/include"
+# export LDFLAGS="-I/opt/lib"
+
+source /home/ec2-user/.bashrc
 
 mkdir ~/build
 cd ~/build
@@ -89,6 +100,15 @@ make
 sudo make install
 cd ..
 
+# sql-lite-devel
+wget https://sqlite.org/2020/sqlite-autoconf-3330000.tar.gz
+tar xvfz sqlite-autoconf-3330000.tar.gz
+cd sqlite-autoconf-3330000
+./configure --prefix=/opt
+make
+make install
+cd ..
+
 
 # R Libraries
 cp /usr/lib64/libgfortran.so.4 /opt/lib
@@ -98,6 +118,9 @@ cp /usr/lib64/libc.so.6 /opt/lib
 cp /usr/lib64/libstdc++.so.6.0.24 /opt/lib
 cp /usr/lib64/libgomp.so.1 /opt/lib
 cp /usr/lib64/libpthread-2.26.so /opt/lib
+cp /usr/lib64/libpcre2-8.so.0 /opt/lib
+cp /opt/R/lib64/R/lib/libR.so  /opt/lib
+cp /opt/R/lib64/R/lib/libRlapack.so /opt/lib
 
 
 R_VERSION=4.0.2
@@ -105,7 +128,7 @@ R_VERSION=4.0.2
 wget https://cran.r-project.org/src/base/R-4/R-${R_VERSION}.tar.gz && \
 tar -zxvf R-${R_VERSION}.tar.gz && \
 cd R-${R_VERSION}
-./configure --prefix=/opt/R --enable-R-shlib --with-recommended-packages --with-x=no --with-aqua=no \
+./configure --prefix=/opt/R --enable-R-shlib --without-recommended-packages --with-x=no --with-aqua=no \
     --with-tcltk=no --with-ICU=no --disable-openmp --disable-nls --disable-largefile \
     --disable-R-profiling --disable-BLAS-shlib --with-libpng=no --with-jpeglib=no --with-libtiff=no
 make
@@ -122,85 +145,101 @@ mv /opt/R/lib64/R/library/translations/DESCRIPTION /opt/R/lib64/R/library/
 rm -rf /opt/R/lib64/R/library/translations/*
 mv /opt/R/lib64/R/library/en* /opt/R/lib64/R/library/translations/
 mv /opt/R/lib64/R/library/DESCRIPTION /opt/R/lib64/R/library/translations/
+## Removing previously copied R libraries for space saving
+rm /opt/R/lib64/R/lib/libR.so  
+rm /opt/R/lib64/R/lib/libRlapack.so
 
 
 # Libraries for additional Lambda builds/Future Step Functions
 sudo -s
 mkdir -p /opt/base-library/lib/R/site-library
 sudo /opt/R/bin/R
-install.packages(c("httr", "aws.signature", "logging","jsonlite", "aws.s3", "data.table", "readxl", "purrr", "tidyr", "lubridate", "RcppRoll", "dplyr", "magrittr", "tidyverse", "biocManager"), lib="/opt/base-library/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
+install.packages(c("httr", "aws.signature", "logging","jsonlite", "aws.s3", "data.table", "readxl", "purrr", "tidyr", "lubridate", "RcppRoll", "dplyr", "magrittr", "tidyverse", "BiocManager"), repos="http://cran.r-project.org", lib="/opt/base-library/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
 q()
 
 sudo -s
 mkdir -p /opt/data-viz/lib/R/site-library
 sudo /opt/R/bin/R
-install.packages(c("shiny", "ggplot2", "gtable", "kableExtra"), lib="/opt/data-viz/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
+install.packages(c("shiny", "ggplot2", "gtable", "kableExtra"), repos="http://cran.r-project.org", lib="/opt/data-viz/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
 q()
 
 
 # Edit Renviron file to use additional site-library directories
-# nano Renviron
-# R_LIBS_USER=${R_LIBS_USER-'/opt/local/lib/R/site-library:/opt/data-viz/lib/R/site-library'}
+# nano /opt/R/lib64/R/etc/Renviron
+# #R_LIBS_USER=${R_LIBS_USER-'/opt/R/lib64/R/library:/opt/base-library/lib/R/site-library:/opt/data-viz/lib/R/site-library#'}
 
-
+chmod -R a+rwx /opt/lib
+chmod -R a+rwx /opt/R/lib64/R/library/
+chmod -R a+rwx /opt/base-library/lib/R/site-library
+chmod -R a+rwx /opt/data-viz/lib/R/site-library
 # # # # # # # # # # # # # # # # # # # # # # #
-#  WinSCP - Delete files/prune R packages  #
+#  WinSCP - Delete files/prune R packages   #
+#  Prune R Libraries                        #
 # # # # # # # # # # # # # # # # # # # # # # #
 
 
 # RPY2 Interface
 VENV=python-rpy2
 python3.8 -m venv ${VENV}
+mkdir -p python
+chmod -R a+rwx python
+cd python
+source /opt/${VENV}/bin/activate
+
+# Edit .bashrc file to include above environmental variables
+# nano .bashrc
+# export PATH="$PATH:/opt/R/lib64/R:/opt/R/bin/R:/opt/bin:/opt/lib:/opt/R/bin"
+# export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
+# export LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
+# export LD_RUN_PATH="$LD_RUN_PATH:/opt/lib"
+# export C_INCLUDE_PATH="$C_INCLUDE_PATH:/usr/include/python2.7/:/opt/include"
+# export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7/:/opt/include"
+# export CPATH="$CPATH:/usr/include/python2.7/:/opt/include"
+# export LDFLAGS="-I/opt/lib"
+# export R_LIBS_USER=${R_LIBS_USER-'/opt/R/lib64/R/library:/opt/base-library/lib/R/site-library:/opt/data-viz/lib/R/site-library'}
 
 # Set environment variables for rpy2 install
-export PATH=opt/R:opt/R/bin/:${PATH}
-export LD_LIBRARY_PATH=opt/R/lib:opt/lib:${LD_LIBRARY_PATH}
-export R_HOME=/opt/R
-export R_LIBS="/opt/R/libs"
-export R_LIBS_USER=${R_LIBS_USER-'/opt/local/lib/R/site-library:/opt/data-viz/lib/R/site-library'}
+export PATH=/opt/R/lib64/R:/opt/R:/opt/R/bin/:/opt/R/bin/R:${PATH}
+export LD_LIBRARY_PATH=/opt/lib:${LD_LIBRARY_PATH}
+export R_HOME=/opt/R/lib64/R
+export R_LIBS=/opt/R/lib64/R/library/:/opt/base-library/lib/R/site-library:/opt/data-viz/lib/R/site-library
+export R_LIBS_USER=${R_LIBS_USER-'/opt/R/lib64/R/library/:/opt/base-library/lib/R/site-library:/opt/data-viz/lib/R/site-library'}
+
+source /opt/python/.bashrc
 
 # Install rpy2
-${VENV}/bin/pip3 install rpy2
-cd /opt
-mkdir python
-chmod -R a+rwx /python
-cp -r /opt/R/bin/python-rpy2/lib64/python3.8/site-packages/* /opt/python
+export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7"
+pip3 install rpy2
 deactivate
 
-rm -rf /opt/R/bin/python-rpy2
-
+cp -r /opt/python-rpy2/lib/python3.8/site-packages/* /opt/python
 
 # Python-R Interface Libraries
-cp /usr/lib64/python3.8/lib-dynload/_sqlite3.cyphon-36m-x86_64-linux-gnu.so /opt/python
-cp /opt/python/opt/R/bin/python-rpy2/rinterface/_rinterface.cypython-36m-x86_64-linux-gnu.so opt/python
+cp /usr/lib64/python3.8/lib-dynload/_sqlite3.cyphon-38-x86_64-linux-gnu.so /opt/python
+
+
+chmod -R a+rwx /opt/python
+# # # # # # # # # # # # # # # # # # # # # # #
+#  WinSCP - Prune Python files              #
+# # # # # # # # # # # # # # # # # # # # # # #
 
 
 # Package Build Files
 sudo -s
 cd /opt
-chmod 755 bootstrap
-zip -r ../rpy2.zip R python
-mv R ../
-mv python ../
-mv aws ../
+zip -r ../rpy2.zip R python lib
 zip -r ../r-base-packages.zip base-library
-mv base-library ../base-library_hold
 zip -r ../dataviz-packages.zip data-viz
-mv data-viz ../data-viz_hold
 zip -r ../subsystem.zip etc doc modules share
-mv ../R ./
-mv ../python ./
-mv ../aws ./
-mv ../base-library_hold base-library
-mv ../data-viz_hold data-viz
-
 
 
 # Upload Build Files to AWS S3
 aws configure
 # Enter credentials #
 
+cd /
 aws s3 cp rpy2.zip s3://aws-lambda-builds-2020
 aws s3 cp r-base-packages.zip s3://aws-lambda-builds-2020
-aws s3 cp subsystem.zip s3://aws-lambda-builds-2020
 aws s3 cp dataviz-packages.zip s3://aws-lambda-builds-2020
+aws s3 cp subsystem.zip s3://aws-lambda-builds-2020
+
