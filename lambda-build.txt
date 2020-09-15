@@ -1,0 +1,353 @@
+#!/bin/bash
+
+#Notes:
+#us-east-1: ami-02354e95b39ca8dec amzn2-ami-hvm-2.0.20200722.0-x86_64-gp2
+
+sudo su
+
+# Install Python 3.8
+amazon-linux-extras enable python3.8
+yum -y install python38
+
+
+# Install R Dependencies Global
+yum -y install java-1.8.0-openjdk-devel
+yum -y install libcurl-devel
+yum install -q -y readline-devel \
+    xorg-x11-server-devel libX11-devel libXt-devel \
+    gcc-c++ gcc-gfortran \
+    zlib-devel blas lapack \
+	openssl-devel libxml2-devel 
+    
+export PATH="$PATH:/opt/bin:/opt/lib:/opt/R/bin:/opt/python"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
+export LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
+export LD_RUN_PATH="$LD_RUN_PATH:/opt/lib"
+export C_INCLUDE_PATH="$C_INCLUDE_PATH:/opt/include:/usr/include/python2.7"
+export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/opt/include:/usr/include/python2.7"
+export CPATH="$CPATH:/opt/include:/usr/include/python2.7"
+export LDFLAGS="-I/opt/lib"
+
+# Edit .bashrc file to include above environmental variables
+# nano ~/.bashrc
+# nano .bashrc
+# Start new session
+
+mkdir ~/build
+cd ~/build
+
+# Install R Dependencies Local
+# openssl
+wget https://www.openssl.org/source/openssl-1.1.1g.tar.gz
+tar -zxvf openssl-1.1.1g.tar.gz
+cd openssl-1.1.1g
+./config --prefix=/opt shared
+make
+sudo make install
+cd ..
+
+
+# curl
+wget https://curl.haxx.se/download/curl-7.72.0.tar.gz
+tar -zxvf curl-7.72.0.tar.gz
+cd curl-7.72.0
+./configure --prefix=/opt --with-ssl
+make
+sudo make install
+cd ..
+
+# bzip2
+wget -O bzip2-latest.tar.gz https://www.sourceware.org/pub/bzip2/bzip2-latest.tar.gz
+tar -zxvf bzip2-latest.tar.gz
+cd bzip2-1.0.8
+make -f Makefile-libbz2_so
+sudo make install PREFIX=/opt
+cd ..
+
+# xz
+wget https://tukaani.org/xz/xz-5.2.5.tar.gz
+tar -zxvf xz-5.2.5.tar.gz
+cd xz-5.2.5
+./configure --prefix=/opt
+make
+sudo make install
+cd ..
+
+# pcre
+wget https://ftp.pcre.org/pub/pcre/pcre2-10.35.tar.gz
+tar -zxvf pcre2-10.35.tar.gz
+cd pcre2-10.35
+./configure --prefix=/opt --enable-utf8 --enable-unicode-properties
+make
+sudo make install
+cd ..
+
+# libxml2
+wget http://xmlsoft.org/sources/libxml2-2.9.10.tar.gz
+tar -zxvf libxml2-2.9.10.tar.gz
+cd libxml2-2.9.10
+./configure --prefix=/opt
+make
+sudo make install
+cd ..
+
+# libpng
+wget https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.gz
+tar xzf libpng-1.6.37.tar.gz
+cd libpng-1.6.37
+./configure --prefix=/opt
+make
+sudo make install
+cd ..
+
+# jpeg
+wget -c http://www.ijg.org/files/jpegsrc.v9d.tar.gz
+tar xzf jpegsrc.v9d.tar.gz
+cd jpeg-9d
+./configure --prefix=/opt
+make
+sudo make install
+cd ..
+
+R_VERSION=4.0.2
+wget https://cran.r-project.org/src/base/R-4/R-${R_VERSION}.tar.gz && \
+tar -zxvf R-${R_VERSION}.tar.gz && \
+cd R-${R_VERSION}
+./configure --prefix=/opt/R --enable-R-shlib --without-recommended-packages --with-x=no --with-aqua=no \
+    --with-tcltk=no --with-ICU=no --disable-nls --disable-largefile --disable-BLAS-shlib \
+    --disable-R-profiling
+make 
+sudo make install
+cd ..
+
+
+# Prune not needed files
+sudo -s
+cd /opt
+rm -rf /opt/R/lib64/R/library/tcltk
+mv /opt/R/lib64/R/library/translations/en* /opt/R/lib64/R/library/
+mv /opt/R/lib64/R/library/translations/DESCRIPTION /opt/R/lib64/R/library/
+rm -rf /opt/R/lib64/R/library/translations/*
+mv /opt/R/lib64/R/library/en* /opt/R/lib64/R/library/translations/
+mv /opt/R/lib64/R/library/DESCRIPTION /opt/R/lib64/R/library/translations/
+
+
+# R Shared Libraries
+# DO: ldd /opt/R/lib64/R/bin/exec/R
+cp /lib64/libgomp.so.1 /opt/lib
+cp /lib64/libpthread.so.0 /opt/lib
+cp /lib64/libc.so.6 /opt/lib
+cp /lib64/libgfortran.so.4 /opt/lib
+cp /lib64/libm.so.6 /opt/lib
+cp /lib64/libquadmath.so.0 /opt/lib
+cp /lib64/libreadline.so.6 /opt/lib
+cp /lib64/libz.so.1 /opt/lib
+cp /lib64/librt.so.1 /opt/lib
+cp /lib64/libdl.so.2 /opt/lib
+cp /lib64/ld-linux-x86-64.so.2 /opt/lib
+cp /lib64/libgcc_s.so.1 /opt/lib
+cp /lib64/libtinfo.so.6 /opt/lib
+
+
+
+# Libraries for additional Lambda builds/Future Step Functions
+sudo -s
+mkdir -p /opt/r_extras/lib/R/site-library
+/opt/R/bin/R
+install.packages(c("httr", "aws.signature", "logging", "jsonlite", "aws.s3", "data.table", "readxl", "purrr", "tidyr", "lubridate", "RcppRoll", "shiny", "ggplot2", "gtable", "kableExtra", "dplyr", "magrittr", "tidyverse", "BiocManager"), repos="http://cran.r-project.org",  lib="/opt/r_extras/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
+q()
+
+# edit /opt/R/lib64/R/etc/Renviron
+# R_LIBS_USER=${R_LIBS_USER-'/opt/r_extras/lib/R/site-library'}
+nano /opt/R/lib64/R/etc/Renviron
+
+sudo -s
+/opt/R/bin/R
+library(BiocManager)
+BiocManager::install(c("GenomicFeatures", "AnnotationDbi", "SummarizedExperiment","biomaRt", "mygene","DESeq2","GenomicScores"), lib="/opt/r_extras/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
+q()
+
+# Trim down shared libraries
+# https://www.r-bloggers.com/10-compacting-your-shared-libraries-after-the-build/
+strip --strip-debug /opt/R/lib64/R/lib/*.so
+strip --strip-debug /opt/R/lib64/R/library/*/libs/*.so
+strip --strip-debug /opt/lib/*.so
+strip --strip-debug /opt/r_extras/lib/R/site-library/*/libs/*.so
+
+
+# Python
+cd /opt
+VENV=python-rpy2
+python3.8 -m venv ${VENV}
+mkdir python
+chmod -R a+rwx python
+cd python
+source /opt/${VENV}/bin/activate
+
+# Install rpy2 (Check Environmental Variables)
+#export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7"
+export R_HOME="/opt/R/lib64/R"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib:/opt/R/lib64/R/lib:/opt/R/lib64/R/library"
+pip3.8 install rpy2 -t python
+deactivate
+
+export PYTHONPATH="${PYTHONPATH}:/opt/python"
+
+# Python-R Interface Libraries
+cp /usr/lib64/python3.8/lib-dynload/_sqlite3.cpython-38-x86_64-linux-gnu.so /opt/python
+cp /usr/lib64/python3.8/lib-dynload/_ctypes.cpython-38-x86_64-linux-gnu.so /opt/python
+cp /usr/lib64/python3.8/lib-dynload/readline.cpython-38-x86_64-linux-gnu.so /opt/python
+cp /usr/lib64/python3.8/lib-dynload/array.cpython-38-x86_64-linux-gnu.so /opt/python
+cp /usr/lib64/python3.8/lib-dynload/_json.cpython-38-x86_64-linux-gnu.so /opt/python
+
+
+export R_USER=/opt/python/rpy2
+
+# # # # # # # # # # # # # # # # # # # # # # #
+#  WinSCP - Prune Python files              #
+# # # # # # # # # # # # # # # # # # # # # # #
+
+cd /opt
+rm -rf ${VENV}
+strip --strip-debug /opt/python/*.so
+
+
+# Upload Boostrap file
+cd /
+chmod -R a_rwx opt
+cd /opt
+
+# Upload bootstrap file via WinSCP #
+
+# Update file permissions/ownership
+chmod 755 bootstrap
+chown root bootstrap
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # #
+#  WinSCP - Delete files/prune r-extras packages  #
+#  DO: ldd /opt/R/lib64/R/bin/exec/R              #
+#  DELETE DIFF                                    #
+#                                                 #
+# # # # # # # # # # # # # # # # # # # # # # # # # #
+
+cd ..
+# Package Build Files
+sudo -s
+cd /opt
+zip -r ../r_py.zip R python
+mv -y R python ../
+mv aws ../
+zip -r ../r_extras.zip r_extras
+mv r_extras ../r_extras_hold
+zip -r ../r_lib.zip lib
+mv lib ../lib_hold
+zip -r ../r_subsystem.zip *
+mv ../R python ./
+mv ../aws ./
+mv ../r_extras_hold r_extras
+mv ../lib_hold lib
+
+# Upload Build Files to AWS S3
+aws configure
+# Enter AWS credentials #
+
+
+cd /
+
+# Save to S3
+aws s3 cp r_py.zip s3://aws-lambda-builds-2020
+aws s3 cp r_subsystem.zip s3://aws-lambda-builds-2020
+aws s3 cp r_extras.zip s3://aws-lambda-builds-2020
+aws s3 cp r_lib.zip s3://aws-lambda-builds-2020
+
+
+# Publish Layers to AWS
+aws lambda publish-layer-version --layer-name r-py-runtime --zip-file fileb://../r_py.zip
+aws lambda publish-layer-version --layer-name r-subsystem --zip-file fileb://../r_subsystem.zip
+aws lambda publish-layer-version --layer-name r-lib --zip-file fileb://../r_lib.zip
+
+# Create a copy of r-extras from S-3 bucket. Select only the packages we need for lambda script. Upload this as final layer.
+#aws lambda publish-layer-version --layer-name r-extras --zip-file fileb://../r_extras.zip
+
+
+# Upload json policy role for lambda
+# cd /opt - upload via WinSCP - chmod 755 - chown - root
+# Create role
+aws iam create-role \
+   --role-name lambda-r-role \
+   --assume-role-policy-document file://trust_policy.json
+
+# Attach IAM role to lambda  
+aws iam attach-role-policy \
+    --role-name lambda-r-role \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+
+# To Execute
+## Upload R script (WinSCP)
+chmod 755 example.r
+zip example.zip example.r
+
+## Create lambda function
+aws lambda create-function \
+    --role arn:aws:iam::535362115856:role/lambda-r-role \
+    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:2" \
+    --function-name lambda_r_test \
+    --runtime provided \
+    --timeout 10 \
+    --zip-file fileb://test.zip \
+    --handler test.handler
+
+
+
+## Invoke Function	
+aws lambda invoke \
+  --function-name lambda_r_test \
+  --invocation-type RequestResponse \
+  --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
+
+
+## RPY2 Python Version
+## Create lambda function
+aws lambda create-function \
+    --role arn:aws:iam::535362115856:role/lambda-r-role \
+    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:2" \
+    --function-name lambda_rpy2_test \
+    --runtime python3.8 \
+    --timeout 60 \
+    --zip-file fileb://handler.zip \
+    --handler handler2.handler
+
+
+
+## Invoke Function	
+aws lambda invoke \
+  --function-name lambda_rpy2_test \
+  --invocation-type RequestResponse \
+  --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
+
+####################################################
+# Publish Layers to AWS: R only
+aws lambda publish-layer-version --layer-name r-base-runtime --zip-file fileb:///home/ec2-user/r.zip
+aws lambda publish-layer-version --layer-name base-subsystem --zip-file fileb:///home/ec2-user/subsystem.zip
+aws lambda publish-layer-version --layer-name r-base-lib --zip-file fileb:///home/ec2-user/r_lib2.zip
+
+
+# Publish Function
+aws lambda create-function \
+    --role arn:aws:iam::535362115856:role/lambda-r-role \
+    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-base-runtime:1"  "arn:aws:lambda:us-east-1:535362115856:layer:base-subsystem:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-base-lib:1" \
+    --function-name r_test \
+    --runtime provided \
+    --timeout 10 \
+    --zip-file fileb://test.zip \
+    --handler example.handler
+	
+	
+## Invoke Function	
+aws lambda invoke \
+  --function-name r_test \
+  --invocation-type RequestResponse \
+  --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
