@@ -158,7 +158,7 @@ install.packages(c("httr", "aws.signature", "logging", "jsonlite", "aws.s3", "da
 q()
 
 # edit /opt/R/lib64/R/etc/Renviron
-# R_LIBS_USER=${R_LIBS_USER-'/opt/r_extras/lib/R/site-library'}
+# R_LIBS_USER=${R_LIBS_USER-'/opt/R/lib64/R/library:/opt/r_extras/lib/R/site-library'}
 nano /opt/R/lib64/R/etc/Renviron
 
 sudo -s
@@ -237,14 +237,16 @@ cd ..
 sudo -s
 cd /opt
 zip -r ../r_py.zip R python
-mv -y R python ../
+mv R ../
+mv python ../
 mv aws ../
 zip -r ../r_extras.zip r_extras
 mv r_extras ../r_extras_hold
 zip -r ../r_lib.zip lib
 mv lib ../lib_hold
 zip -r ../r_subsystem.zip *
-mv ../R python ./
+mv ../R ./
+mv ../python ./
 mv ../aws ./
 mv ../r_extras_hold r_extras
 mv ../lib_hold lib
