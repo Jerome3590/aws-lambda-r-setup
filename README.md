@@ -7,7 +7,8 @@ AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 5: SCAR: Serverless Container-aware ARchitectures](https://github.com/grycap/scar/tree/master/examples/r) \
 [Reference 6: Numeract: Of R and APIs: Running R in Amazon Lambda](https://numeract.github.io/aws-lambda-r/#1) \
 [Reference 7: Numeract: R Deployment Package](https://github.com/numeract/aws-lambda-r/blob/master/scripts/13_create_deployment_package.sh) \
-[Reference 8: Van Andel Research Institute: lambdaR](https://github.com/VanAndelInstitute/lambdaR)
+[Reference 8: Van Andel Research Institute: lambdaR](https://github.com/VanAndelInstitute/lambdaR)  \
+[Reference 9: Analyzing Genomics Data at Scale](https://aws.amazon.com/blogs/compute/analyzing-genomics-data-at-scale-using-r-aws-lambda-and-amazon-api-gateway/)
 
 
 lambda-build.txt is the latest compilation of all research to date.
