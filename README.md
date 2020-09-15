@@ -10,7 +10,7 @@ AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 8: Van Andel Research Institute: lambdaR](https://github.com/VanAndelInstitute/lambdaR)
 
 
-lambda-build.sh is the latest compilation of all research to date.
+lambda-build.txt is the latest compilation of all research to date.
 
 Using R with a Python handler (handler.py)
 
