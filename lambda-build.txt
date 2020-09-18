@@ -20,13 +20,16 @@ yum install -q -y readline-devel \
 	openssl-devel libxml2-devel 
     
 export PATH="$PATH:/opt/bin:/opt/lib:/opt/R/bin:/opt/python"
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib:/opt/R/lib64/R/lib:/opt/R/lib64/R/library"
 export LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
 export LD_RUN_PATH="$LD_RUN_PATH:/opt/lib"
 export C_INCLUDE_PATH="$C_INCLUDE_PATH:/opt/include:/usr/include/python2.7"
 export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/opt/include:/usr/include/python2.7"
 export CPATH="$CPATH:/opt/include:/usr/include/python2.7"
 export LDFLAGS="-I/opt/lib"
+export PYTHONPATH="$PYTHONPATH:/opt/python"
+export R_HOME="/opt/R/lib64/R"
+export R_USER="/opt/python/rpy2"
 
 # Edit .bashrc file to include above environmental variables
 # nano ~/.bashrc
@@ -167,7 +170,12 @@ library(BiocManager)
 BiocManager::install(c("GenomicFeatures", "AnnotationDbi", "SummarizedExperiment","biomaRt", "mygene","DESeq2","GenomicScores"), lib="/opt/r_extras/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
 q()
 
-# Trim down shared libraries
+
+# Copy Base Shared Libraries to opt/lib - this seems to help with dynamic loading of libraries
+cp /opt/R/lib64/R/library/*/libs/*.so /opt/lib
+
+
+# Trim down size of shared libraries
 # https://www.r-bloggers.com/10-compacting-your-shared-libraries-after-the-build/
 strip --strip-debug /opt/R/lib64/R/lib/*.so
 strip --strip-debug /opt/R/lib64/R/library/*/libs/*.so
@@ -214,14 +222,14 @@ strip --strip-debug /opt/python/*.so
 
 # Upload Boostrap file
 cd /
-chmod -R a_rwx opt
+chmod -R a+rwx opt
 cd /opt
 
 # Upload bootstrap file via WinSCP #
 
 # Update file permissions/ownership
 chmod 755 bootstrap
-chown root bootstrap
+#chown root bootstrap
 
 
 
@@ -295,30 +303,10 @@ zip example.zip example.r
 ## Create lambda function
 aws lambda create-function \
     --role arn:aws:iam::535362115856:role/lambda-r-role \
-    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:2" \
-    --function-name lambda_r_test \
-    --runtime provided \
-    --timeout 10 \
-    --zip-file fileb://test.zip \
-    --handler test.handler
-
-
-
-## Invoke Function	
-aws lambda invoke \
-  --function-name lambda_r_test \
-  --invocation-type RequestResponse \
-  --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
-
-
-## RPY2 Python Version
-## Create lambda function
-aws lambda create-function \
-    --role arn:aws:iam::535362115856:role/lambda-r-role \
-    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:2" \
-    --function-name lambda_rpy2_test \
+    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:5"  "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:6" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:5" \
+    --function-name python-r \
     --runtime python3.8 \
-    --timeout 60 \
+    --timeout 10 \
     --zip-file fileb://handler.zip \
     --handler handler2.handler
 
@@ -326,22 +314,18 @@ aws lambda create-function \
 
 ## Invoke Function	
 aws lambda invoke \
-  --function-name lambda_rpy2_test \
+  --function-name python-r_test \
   --invocation-type RequestResponse \
   --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
 
+
+
 ####################################################
 # Publish Layers to AWS: R only
-aws lambda publish-layer-version --layer-name r-base-runtime --zip-file fileb:///home/ec2-user/r.zip
-aws lambda publish-layer-version --layer-name base-subsystem --zip-file fileb:///home/ec2-user/subsystem.zip
-aws lambda publish-layer-version --layer-name r-base-lib --zip-file fileb:///home/ec2-user/r_lib2.zip
-
-
-# Publish Function
 aws lambda create-function \
     --role arn:aws:iam::535362115856:role/lambda-r-role \
-    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-base-runtime:1"  "arn:aws:lambda:us-east-1:535362115856:layer:base-subsystem:1" "arn:aws:lambda:us-east-1:535362115856:layer:r-base-lib:1" \
-    --function-name r_test \
+    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:5"  "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:6" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:5" \
+    --function-name r-runtime-base \
     --runtime provided \
     --timeout 10 \
     --zip-file fileb://test.zip \
@@ -350,6 +334,14 @@ aws lambda create-function \
 	
 ## Invoke Function	
 aws lambda invoke \
-  --function-name r_test \
+  --function-name r-runtime-base \
   --invocation-type RequestResponse \
   --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
+  
+  
+  
+##########################################################
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib:/opt/R/lib64/R/lib:/opt/R/lib64/R/library"
+export PYTHONPATH="$PYTHONPATH:/opt/python"
+export R_HOME="/opt/R/lib64/R"
+export R_USER="/opt/python/rpy2"
