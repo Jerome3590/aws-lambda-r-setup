@@ -20,7 +20,7 @@ yum install -q -y readline-devel \
 	openssl-devel libxml2-devel 
     
 export PATH="$PATH:/opt/bin:/opt/lib:/opt/R/bin:/opt/python"
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib:/opt/R/lib64/R/lib:/opt/R/lib64/R/library"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
 export LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib"
 export LD_RUN_PATH="$LD_RUN_PATH:/opt/lib"
 export C_INCLUDE_PATH="$C_INCLUDE_PATH:/opt/include:/usr/include/python2.7"
@@ -31,10 +31,11 @@ export PYTHONPATH="$PYTHONPATH:/opt/python"
 export R_HOME="/opt/R/lib64/R"
 export R_USER="/opt/python/rpy2"
 
-# Edit .bashrc file to include above environmental variables
-# nano ~/.bashrc
-# nano .bashrc
-# Start new session
+nano .bash_profile
+# Update Environmental Variables
+nano ~/.bash_profile
+# Update Environmental Variables
+
 
 mkdir ~/build
 cd ~/build
@@ -112,6 +113,7 @@ make
 sudo make install
 cd ..
 
+
 R_VERSION=4.0.2
 wget https://cran.r-project.org/src/base/R-4/R-${R_VERSION}.tar.gz && \
 tar -zxvf R-${R_VERSION}.tar.gz && \
@@ -135,22 +137,35 @@ mv /opt/R/lib64/R/library/en* /opt/R/lib64/R/library/translations/
 mv /opt/R/lib64/R/library/DESCRIPTION /opt/R/lib64/R/library/translations/
 
 
+# AWS Linux 2 Dependencies - binutils ld and objdump (https://forums.aws.amazon.com/message.jspa?messageID=924922)
+cp -P /usr/bin/ld.bfd /opt/bin/ld
+cp -P /usr/bin/objdump /opt/bin/objdump
+
+# DO: ldd /usr/bin/ld.bfd
+# DO: ldd /usr/bin/objdump
+cp /usr/lib64/libbfd-2.29.1-30.amzn2.so /opt/lib
+cp /usr/lib64/libdl.so.2 /opt/lib
+cp /usr/lib64/libc.so.6 /opt/lib
+cp /usr/lib64/ld-linux-x86-64.so.2 /opt/lib
+cp /usr/lib64/libopcodes-2.29.1-30.amzn2.so /opt/lib
+cp /usr/lib64/libbfd-2.29.1-30.amzn2.so /opt/lib
+
+
 # R Shared Libraries
 # DO: ldd /opt/R/lib64/R/bin/exec/R
 cp /lib64/libgomp.so.1 /opt/lib
 cp /lib64/libpthread.so.0 /opt/lib
-cp /lib64/libc.so.6 /opt/lib
+#cp /lib64/libc.so.6 /opt/lib  (copied above)
 cp /lib64/libgfortran.so.4 /opt/lib
 cp /lib64/libm.so.6 /opt/lib
 cp /lib64/libquadmath.so.0 /opt/lib
 cp /lib64/libreadline.so.6 /opt/lib
 cp /lib64/libz.so.1 /opt/lib
 cp /lib64/librt.so.1 /opt/lib
-cp /lib64/libdl.so.2 /opt/lib
-cp /lib64/ld-linux-x86-64.so.2 /opt/lib
+#cp /lib64/libdl.so.2 /opt/lib (copied above)
+#cp /lib64/ld-linux-x86-64.so.2 /opt/lib (copied above)
 cp /lib64/libgcc_s.so.1 /opt/lib
 cp /lib64/libtinfo.so.6 /opt/lib
-
 
 
 # Libraries for additional Lambda builds/Future Step Functions
@@ -160,9 +175,11 @@ mkdir -p /opt/r_extras/lib/R/site-library
 install.packages(c("httr", "aws.signature", "logging", "jsonlite", "aws.s3", "data.table", "readxl", "purrr", "tidyr", "lubridate", "RcppRoll", "shiny", "ggplot2", "gtable", "kableExtra", "dplyr", "magrittr", "tidyverse", "BiocManager"), repos="http://cran.r-project.org",  lib="/opt/r_extras/lib/R/site-library", configure.vars="INCLUDE_DIR=/opt/lib LIB_DIR=/opt/lib")
 q()
 
+
 # edit /opt/R/lib64/R/etc/Renviron
-# R_LIBS_USER=${R_LIBS_USER-'/opt/R/lib64/R/library:/opt/r_extras/lib/R/site-library'}
+# R_LIBS_USER=${R_LIBS_USER-'/opt/r_extras/lib/R/site-library'}
 nano /opt/R/lib64/R/etc/Renviron
+
 
 sudo -s
 /opt/R/bin/R
@@ -220,25 +237,24 @@ rm -rf ${VENV}
 strip --strip-debug /opt/python/*.so
 
 
-# Upload Boostrap file
-cd /
-chmod -R a+rwx opt
-cd /opt
-
-# Upload bootstrap file via WinSCP #
-
-# Update file permissions/ownership
-chmod 755 bootstrap
-#chown root bootstrap
-
-
-
 # # # # # # # # # # # # # # # # # # # # # # # # # #
 #  WinSCP - Delete files/prune r-extras packages  #
 #  DO: ldd /opt/R/lib64/R/bin/exec/R              #
 #  DELETE DIFF                                    #
-#                                                 #
 # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+cd /
+chmod -R a+rwx opt
+cd /opt
+# Upload bootstrap file via WinSCP #
+
+
+# Make sure everything 'root'
+chown -R root /opt
+
+# Make sure everything executable
+chmod -R a+rwx /opt
 
 cd ..
 # Package Build Files
@@ -274,9 +290,10 @@ aws s3 cp r_lib.zip s3://aws-lambda-builds-2020
 
 
 # Publish Layers to AWS
-aws lambda publish-layer-version --layer-name r-py-runtime --zip-file fileb://../r_py.zip
-aws lambda publish-layer-version --layer-name r-subsystem --zip-file fileb://../r_subsystem.zip
-aws lambda publish-layer-version --layer-name r-lib --zip-file fileb://../r_lib.zip
+aws lambda publish-layer-version --layer-name rpy2-runtime --zip-file fileb://../r_py.zip
+aws lambda publish-layer-version --layer-name rpy2-subsystem --zip-file fileb://../r_subsystem.zip
+aws lambda publish-layer-version --layer-name rpy2-lib --zip-file fileb://../r_lib.zip
+aws lambda publish-layer-version --layer-name rpy2-library --zip-file fileb://../r_extras.zip
 
 # Create a copy of r-extras from S-3 bucket. Select only the packages we need for lambda script. Upload this as final layer.
 #aws lambda publish-layer-version --layer-name r-extras --zip-file fileb://../r_extras.zip
@@ -300,21 +317,26 @@ aws iam attach-role-policy \
 chmod 755 example.r
 zip example.zip example.r
 
-## Create lambda function
+
+## Create python-R lambda function
+# Upload handler2.py via WinSCP. Zip as handler.zip
 aws lambda create-function \
     --role arn:aws:iam::535362115856:role/lambda-r-role \
-    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:5"  "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:6" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:5" \
-    --function-name python-r \
+    --layers "arn:aws:lambda:us-east-1:535362115856:layer:rpy2-runtime:3" "arn:aws:lambda:us-east-1:535362115856:layer:rpy2-subsystem:2" "arn:aws:lambda:us-east-1:535362115856:layer:rpy2-lib:2" \
+    --function-name r-python38 \
     --runtime python3.8 \
-    --timeout 10 \
+    --timeout 360 \
     --zip-file fileb://handler.zip \
-    --handler handler2.handler
+    --handler handler2.handler  \
+	--memory-size 256  \
+	--environment Variables="{PATH=$PATH:/opt/bin:/opt/lib:/opt/R/bin:/opt/python,LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/lib:/opt/R/lib64/R/lib:/opt/R/lib64/R/library,LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/lib,LD_RUN_PATH=$LD_RUN_PATH:/opt/lib,C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/include:/usr/include/python2.7,CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/opt/include:/usr/include/python2.7,CPATH=$CPATH:/opt/include:/usr/include/python2.7,LDFLAGS=-I/opt/lib,PYTHONPATH=$PYTHONPATH:/opt/python,R_HOME=/opt/R/lib64/R,R_USER=/opt/python/rpy2}"
+	
 
 
 
 ## Invoke Function	
 aws lambda invoke \
-  --function-name python-r_test \
+  --function-name r-python38 \
   --invocation-type RequestResponse \
   --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
 
@@ -322,19 +344,23 @@ aws lambda invoke \
 
 ####################################################
 # Publish Layers to AWS: R only
+
+	
 aws lambda create-function \
     --role arn:aws:iam::535362115856:role/lambda-r-role \
-    --layers "arn:aws:lambda:us-east-1:535362115856:layer:r-py-runtime:5"  "arn:aws:lambda:us-east-1:535362115856:layer:r-subsystem:6" "arn:aws:lambda:us-east-1:535362115856:layer:r-lib:5" \
-    --function-name r-runtime-base \
+    --layers "arn:aws:lambda:us-east-1:535362115856:layer:rpy2-runtime:3" "arn:aws:lambda:us-east-1:535362115856:layer:rpy2-subsystem:2" "arn:aws:lambda:us-east-1:535362115856:layer:rpy2-lib:2" \
+    --function-name r-runtime-402 \
     --runtime provided \
-    --timeout 10 \
-    --zip-file fileb://test.zip \
-    --handler example.handler
+    --timeout 360 \
+    --zip-file fileb://example.zip \
+    --handler example.handler  \
+	--memory-size 256  \
+	--environment Variables="{PATH=$PATH:/opt/bin:/opt/lib:/opt/R/bin:/opt/python,LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/lib:/opt/R/lib64/R/lib:/opt/R/lib64/R/library,LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/lib,LD_RUN_PATH=$LD_RUN_PATH:/opt/lib,C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/include:/usr/include/python2.7,CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/opt/include:/usr/include/python2.7,CPATH=$CPATH:/opt/include:/usr/include/python2.7,LDFLAGS=-I/opt/lib,PYTHONPATH=$PYTHONPATH:/opt/python,R_HOME=/opt/R/lib64/R,R_USER=/opt/python/rpy2}"
 	
 	
 ## Invoke Function	
 aws lambda invoke \
-  --function-name r-runtime-base \
+  --function-name r-runtime-402 \
   --invocation-type RequestResponse \
   --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
   
@@ -345,3 +371,9 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/lib:/opt/R/lib64/R/lib:/opt/R/lib6
 export PYTHONPATH="$PYTHONPATH:/opt/python"
 export R_HOME="/opt/R/lib64/R"
 export R_USER="/opt/python/rpy2"
+
+##Cleanup
+'rm' r_py.zip
+'rm' r_subsystem.zip
+'rm' r_extras.zip
+'rm' r_lib.zip
