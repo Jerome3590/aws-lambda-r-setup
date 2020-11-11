@@ -1,0 +1,312 @@
+#!/bin/bash
+
+#Notes:
+#us-east-1: ami-02354e95b39ca8dec amzn2-ami-hvm-2.0.20200722.0-x86_64-gp2
+
+sudo su
+
+# Install Python 3.8 system-global
+amazon-linux-extras enable python3.8
+yum -y install python38
+
+#AWS configure - uninstall awscli version1/install awscli version2
+sudo rm -rf /usr/local/aws
+sudo rm /usr/bin/aws
+pip3.8 install awscli --upgrade --user
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+
+# Install R Dependencies system-global
+yum -y install java-1.8.0-openjdk-devel
+yum -y install libcurl-devel
+yum install -q -y readline-devel \
+    xorg-x11-server-devel libX11-devel libXt-devel \
+    gcc-c++ gcc-gfortran \
+    zlib-devel blas lapack \
+	openssl-devel libxml2-devel \
+	libjpeg-devel openjpeg2-devel \
+	openjpeg-libs fontconfig-devel
+	
+yum -y install automake autoconf libtool \
+    libwebp libwebp-devel libicu-devel  \
+	openjpeg-devel cairo-devel libpng-devel
+	
+#Need to have VPC eith EFS setup prior
+mkdir ~/efs-mount-point
+sudo mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-8a78be7f.efs.us-east-1.amazonaws.com:/   ~/efs-mount-point
+  
+cd /home/ec2-user/efs-mount-point/lambda/
+
+# Update Environmental Variables
+nano ~/.bashrc
+export PATH="$PATH:/home/ec2-user/efs-mount-point/lambda/bin:/home/ec2-user/efs-mount-point/lambda/lib:/home/ec2-user/efs-mount-point/lambda/R/bin:/usr/local/bin/aws:/usr/bin/python3.8:usr/bin/pip3.8"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/ec2-user/efs-mount-point/lambda/lib:/home/ec2-user/efs-mount-point/lambda/R/lib64/R/lib/:/usr/local/lib:/home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/:/home/ec2-user/efs-mount-point/lambda/python/lib/"
+export LIBRARY_PATH="$LD_LIBRARY_PATH:/home/ec2-user/efs-mount-point/lambda/lib:/usr/local/lib:/home/ec2-user/efs-mount-point/lambda/python/lib/"
+export LD_RUN_PATH="$LD_RUN_PATH:/home/ec2-user/efs-mount-point/lambda/lib:/usr/local/lib"
+export C_INCLUDE_PATH="$C_INCLUDE_PATH:/home/ec2-user/efs-mount-point/lambda/include:usr/local/lib/:/home/ec2-user/efs-mount-point/lambda/python/include/python3.8/"
+export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/home/ec2-user/efs-mount-point/lambda/include:/usr/local/lib:/home/ec2-user/efs-mount-point/lambda/python/include/python3.8/"
+export CPATH="$CPATH:/home/ec2-user/efs-mount-point/lambda/include:/usr/local/lib:/home/ec2-user/efs-mount-point/lambda/python/include/python3.8/"
+export LDFLAGS="-L/home/ec2-user/efs-mount-point/lambda/lib"
+export R_HOME="/home/ec2-user/efs-mount-point/lambda/R/lib64/R"
+#export R_USER="/home/ec2-user/efs-mount-point/lambda/python/py-venv/lib/python3.8/site-packages/rpy2/"
+
+
+sudo su
+mkdir ~/build
+cd ~/build
+
+# Install R Dependencies local - EFS
+# openssl
+wget https://www.openssl.org/source/openssl-1.1.1g.tar.gz
+tar -zxvf openssl-1.1.1g.tar.gz
+cd openssl-1.1.1g
+./config --prefix=/home/ec2-user/efs-mount-point/lambda/ --openssldir=/home/ec2-user/efs-mount-point/lambda/ shared 
+make
+sudo make install
+cd ..
+
+# curl
+wget https://curl.haxx.se/download/curl-7.72.0.tar.gz
+tar -zxvf curl-7.72.0.tar.gz
+cd curl-7.72.0
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/ --with-ssl
+make
+sudo make install
+cd ..
+
+# bzip2
+wget -O bzip2-latest.tar.gz https://www.sourceware.org/pub/bzip2/bzip2-latest.tar.gz
+tar -zxvf bzip2-latest.tar.gz
+cd bzip2-1.0.8
+make -f Makefile-libbz2_so
+sudo make install PREFIX=/home/ec2-user/efs-mount-point/lambda/
+cd ..
+
+# xz
+wget https://tukaani.org/xz/xz-5.2.5.tar.gz
+tar -zxvf xz-5.2.5.tar.gz
+cd xz-5.2.5
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/ --enable-small
+make
+sudo make install
+cd ..
+
+# pcre
+wget https://ftp.pcre.org/pub/pcre/pcre2-10.35.tar.gz
+tar -zxvf pcre2-10.35.tar.gz
+cd pcre2-10.35
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/ --enable-utf8 --enable-unicode-properties
+make
+sudo make install
+cd ..
+
+# libxml2
+wget http://xmlsoft.org/sources/libxml2-2.9.10.tar.gz
+tar -zxvf libxml2-2.9.10.tar.gz
+cd libxml2-2.9.10
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/
+make
+sudo make install
+cd ..
+
+# libpng
+wget https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.gz
+tar xzf libpng-1.6.37.tar.gz
+cd libpng-1.6.37
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/
+make
+sudo make install
+cd ..
+
+# jpeg
+wget -c http://www.ijg.org/files/jpegsrc.v9d.tar.gz
+tar xzf jpegsrc.v9d.tar.gz
+cd jpeg-9d
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/
+make
+sudo make install
+cd ..
+
+
+# Ghostscript for png
+wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs920/ghostscript-9.20.tar.gz
+tar xzvf ghostscript-9.20.tar.gz
+cd ghostscript-9.20/
+./autogen.sh
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/
+make
+sudo make install
+cd ..
+
+
+
+sudo cp /usr/lib64/libgfortran.so.4 /home/ec2-user/efs-mount-point/lambda/lib
+sudo cp /usr/lib64/libquadmath.so.0 /home/ec2-user/efs-mount-point/lambda/lib
+
+
+
+R_VERSION=4.0.3
+wget https://cran.r-project.org/src/base/R-4/R-${R_VERSION}.tar.gz && \
+tar -zxvf R-${R_VERSION}.tar.gz && \
+cd R-${R_VERSION}
+./configure --prefix=/home/ec2-user/efs-mount-point/lambda/R --enable-R-shlib --without-recommended-packages --with-aqua=no \
+    --with-tcltk=no --with-ICU=no --disable-nls --disable-R-profiling --disable-BLAS-shlib
+make 
+sudo make install
+cd ..
+
+
+# Prune not needed files
+sudo -s
+cd /home/ec2-user/efs-mount-point/lambda/
+rm -rf /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/tcltk
+mv /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/translations/en* /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/
+mv /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/translations/DESCRIPTION /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/
+rm -rf /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/translations/*
+mv /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/en* /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/translations/
+mv /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/DESCRIPTION /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/translations/
+
+
+
+# R Shared Libraries
+# DO: ldd /home/ec2-user/efs-mount-point/lambda2//R/lib64/R/bin/exec/R
+cp /lib64/libpthread.so.0 /home/ec2-user/efs-mount-point/lambda/lib
+cp /lib64/libc.so.6 /home/ec2-user/efs-mount-point/lambda/lib 
+cp /lib64/ld-linux-x86-64.so.2 /home/ec2-user/efs-mount-point/lambda/lib
+cp /lib64/libgomp.so.1 /home/ec2-user/efs-mount-point/lambda/lib
+
+
+
+# Libraries for additional Lambda builds/Future Step Functions
+sudo -s
+/home/ec2-user/efs-mount-point/lambda/R/bin/R
+install.packages(c("httr", "aws.signature", "logging", "jsonlite", "aws.s3", "data.table", "xml2", "base64enc", "digest", "tibble", "cli", "crayon", "ellipsis", "fansi", "lifecycle", "pillar", "pkgconfig", "vctrs", "rappdirs", "purrr", "fmsb", "magrittr", "caret", "scales", "numDeriv", "SQUAREM", "lava", "prodlim", "iterators", "gower", "ipred", "lubridate", "reticulate", "shiny", "ggplot2", "timeDate", "foreach", "ModelMetrics", "recipes","xgboost", "pROC"), repos="http://cran.r-project.org", configure.vars="INCLUDE_DIR=/home/ec2-user/efs-mount-point/lambda/lib LIB_DIR=/home/ec2-user/efs-mount-point/lambda/lib")
+q()
+
+
+sudo -s
+/home/ec2-user/efs-mount-point/lambda/R/bin/R
+install.packages(c('devtools','BiocManager'), configure.vars="INCLUDE_DIR=/home/ec2-user/efs-mount-point/lambda/lib LIB_DIR=/home/ec2-user/efs-mount-point/lambda/lib")
+q()
+
+
+sudo -s
+/home/ec2-user/efs-mount-point/lambda/R/bin/R
+devtools::install_url('https://github.com/catboost/catboost/releases/download/v0.24.2/catboost-R-Linux-0.24.2.tgz', INSTALL_opts = c("--no-multiarch"))
+q()
+
+
+sudo -s
+/home/ec2-user/efs-mount-point/lambda/R/bin/R
+library(BiocManager)
+BiocManager::install(c("GenomicFeatures", "AnnotationDbi", "SummarizedExperiment","biomaRt", "mygene","DESeq2","GenomicScores"), configure.vars="INCLUDE_DIR=/home/ec2-user/efs-mount-point/lambda/lib LIB_DIR=/home/ec2-user/efs-mount-point/lambda/lib")
+q()
+
+
+install.packages(c('xgboost'), configure.vars="INCLUDE_DIR=/home/ec2-user/efs-mount-point/lambda/lib LIB_DIR=/home/ec2-user/efs-mount-point/lambda/lib")
+
+
+# Trim down size of shared libraries
+# https://www.r-bloggers.com/10-compacting-your-shared-libraries-after-the-build/
+strip --strip-debug /home/ec2-user/efs-mount-point/lambda/R/lib64/R/lib/*.so
+strip --strip-debug /home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/*/libs/*.so
+strip --strip-debug /home/ec2-user/efs-mount-point/lambda/lib/*.so
+
+
+
+# Virtual environment for RPY2
+# Local python copy (backup for AWS Lambda)
+wget https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tgz
+tar xvf Python-3.8.5.tgz
+
+cd Python-3.8*/
+./configure --enable-optimizations --prefix=/home/ec2-user/efs-mount-point/lambda
+sudo make altinstall
+
+
+#Add python3.8/pip3.8 to PATH
+export PYTHONPATH="$PYTHONPATH:/home/ec2-user/efs-mount-point/lambda/python/bin"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/ec2-user/efs-mount-point/lambda/python/lib"
+export PATH="$PATH:/home/ec2-user/efs-mount-point/lambda/python/bin/"
+
+python3.8 --version
+pip3.8 --version
+
+
+cd /home/ec2-user/efs-mount-point/lambda/python
+python3 -m pip install python-dev-tools --user --upgrade
+python3.8 -m venv py-venv
+source py-venv/bin/activate
+pip3 install --upgrade pandas numpy scipy scikit-learn simpy 
+
+
+cd /home/ec2-user/efs-mount-point/lambda/python/py-venv/
+# Install RPY2 - check and make sure 'python/include/python3.8/' in C_INCLUDE_PATH
+# Check and make sure all R library paths (lib/library-site-packages) in LD_LIBRARY_PATH
+# Check and make sure R_HOME and R_LIBS_USER properly set as well
+#export R_HOME="/home/ec2-user/efs-mount-point/lambda/R/lib64/R"
+#export R_LIBS_USER="/home/ec2-user/efs-mount-point/lambda/R/lib64/R/library/
+pip3 install --upgrade rpy2
+deactivate
+
+
+
+# Make sure everything userid:1002 as 'root'
+adduser 1002
+echo 1002:1002 | chpasswd
+usermod -aG root 1002
+chown -R 1002 /home/ec2-user/efs-mount-point/lambda/
+
+
+# Make sure everything executable
+chmod -R 777 /home/ec2-user/efs-mount-point/lambda/
+
+
+# PatchElf
+wget http://ftp.debian.org/debian/pool/main/p/patchelf/patchelf_0.8.orig.tar.gz
+tar xzvf patchelf_0.8.orig.tar.gz
+cd patchelf-0.8
+./configure --prefix=/opt/patchelf
+make
+make check
+sudo make install
+
+zip -r9 patchelf.zip patchelf
+
+aws lambda publish-layer-version --layer-name patchelf --zip-file fileb://patchelf.zip
+
+
+# Upload bootstrap file via WinSCP #
+
+
+# To Execute
+## Upload R script (WinSCP)
+chmod 755 example.r
+zip example.zip example.r
+	
+
+####################################################
+# Publish Function to AWS
+
+# /mnt/ = /home/ec2-user/efs-mount-point/
+	
+aws lambda create-function \
+    --role arn:aws:iam::535362115856:role/lambda-r-role \
+    --function-name r-test-efs \
+    --runtime provided \
+    --timeout 360 \
+    --zip-file fileb://example.zip \
+    --handler example.handler  \
+	--memory-size 256  \
+	--environment Variables="{PATH=$PATH:/mnt/lambda/bin:/mnt/lambda/lib:/mnt/lambda/R/bin:/mnt/lambda/python,LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/lambda/lib:/mnt/lambda/R/lib64/R/lib:/mnt/lambda/R/lib64/R/library,LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/lambda/lib,LD_RUN_PATH=$LD_RUN_PATH:/mnt/lambda/lib,C_INCLUDE_PATH=$C_INCLUDE_PATH:/mnt/lambda/include:/mnt/lambda/python/include/python3.8/,CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/mnt/lambda/include:/mnt/lambda/python/include/python3.8/,CPATH=$CPATH:/mnt/lambda/include:/mnt/lambda/python/include/python3.8/,LDFLAGS=-I/mnt/lambda/lib,PYTHONPATH=$PYTHONPATH:/mnt/lambda/python,R_HOME=/mnt/lambda/R/lib64/R}"
+
+	
+## Invoke Function	
+aws lambda invoke \
+  --function-name r-test-efs \
+  --invocation-type RequestResponse \
+  --log-type Tail - | grep "LogResult"| awk -F'"' '{print $4}' | base64 --decode	
+
