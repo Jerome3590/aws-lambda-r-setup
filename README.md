@@ -1,6 +1,9 @@
-*UPDATE* - With new 10GB Ephemeral Storage in AWS Lambda..Update to this process here: https://github.com/Jerome3590/AWS-Bytes-and-Small-Projects/tree/main/lambda
+## *UPDATE!* - With new 10GB Ephemeral Storage in AWS Lambda..Update to this process here: https://github.com/Jerome3590/AWS-Bytes-and-Small-Projects/tree/main/lambda
 
 
+
+
+(Leaving here for historical)
 AWS LAMBDA R ENVIRONMENT SETUP\
 [Reference 1: Bakdata: Running R On AWS Lambda](https://medium.com/bakdata/running-r-on-aws-lambda-9d40643551a6)\
 [Reference 2: RBloggers - How To Use R In AWS Lambda](https://www.r-bloggers.com/how-to-use-r-in-aws-lambda/)\
